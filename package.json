@@ -3,23 +3,18 @@
   "private": false,
   "license": "mit",
   "scripts": {
-    "dev": "next dev",
-    "build": "cross-env BUILD_MODE=standalone next build",
     "start": "next start",
     "lint": "next lint",
-    "export": "cross-env BUILD_MODE=export BUILD_APP=1 next build",
-    "export:dev": "cross-env BUILD_MODE=export BUILD_APP=1 next dev",
+    "build": "cross-env BUILD_APP=1 next build",
+    "dev": "cross-env BUILD_APP=1 next dev",
     "app:dev": "yarn tauri dev",
     "app:build": "yarn tauri build",
-    "prompts": "node ./scripts/fetch-prompts.mjs",
-    "prepare": "husky install",
-    "proxy-dev": "sh ./scripts/init-proxy.sh && proxychains -f ./scripts/proxychains.conf yarn dev"
+    "prepare": "husky install"
   },
   "dependencies": {
     "@fortaine/fetch-event-source": "^3.0.6",
     "@hello-pangea/dnd": "^16.3.0",
     "@svgr/webpack": "^6.5.1",
-    "@vercel/analytics": "^0.1.11",
     "emoji-picker-react": "^4.4.7",
     "fuse.js": "^6.6.2",
     "html-to-image": "^1.11.11",
