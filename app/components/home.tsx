@@ -27,7 +27,7 @@ import { SideBar } from "./sidebar";
 import { useAppConfig } from "../store/config";
 import { AuthPage } from "./auth";
 import { getClientConfig } from "../config/client";
-import { api } from "../client/api";
+import { api } from "../backend/api";
 import { useAccessStore } from "../store";
 
 export function Loading(props: { noLogo?: boolean }) {
@@ -48,10 +48,6 @@ const Chat = dynamic(async () => (await import("./chat")).Chat, {
 });
 
 const NewChat = dynamic(async () => (await import("./new-chat")).NewChat, {
-  loading: () => <Loading noLogo />,
-});
-
-const MaskPage = dynamic(async () => (await import("./mask")).MaskPage, {
   loading: () => <Loading noLogo />,
 });
 
@@ -98,10 +94,8 @@ const useHasHydrated = () => {
 
 const loadAsyncGoogleFont = () => {
   const linkEl = document.createElement("link");
-  const proxyFontUrl = "/google-fonts";
   const remoteFontUrl = "https://fonts.googleapis.com";
-  const googleFontUrl =
-    getClientConfig()?.buildMode === "export" ? remoteFontUrl : proxyFontUrl;
+  const googleFontUrl = remoteFontUrl;
   linkEl.rel = "stylesheet";
   linkEl.href =
     googleFontUrl +
@@ -143,7 +137,6 @@ function Screen() {
             <Routes>
               <Route path={Path.Home} element={<Chat />} />
               <Route path={Path.NewChat} element={<NewChat />} />
-              <Route path={Path.Masks} element={<MaskPage />} />
               <Route path={Path.Chat} element={<Chat />} />
               <Route path={Path.Settings} element={<Settings />} />
             </Routes>
@@ -154,21 +147,8 @@ function Screen() {
   );
 }
 
-export function useLoadData() {
-  const config = useAppConfig();
-
-  useEffect(() => {
-    (async () => {
-      const models = await api.llm.models();
-      config.mergeModels(models);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-}
-
 export function Home() {
   useSwitchTheme();
-  useLoadData();
 
   useEffect(() => {
     console.log("[Config] got config from build time", getClientConfig());

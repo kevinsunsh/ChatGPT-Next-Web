@@ -14,8 +14,6 @@ import { useChatStore } from "../store";
 import Locale from "../locales";
 import { Link, useNavigate } from "react-router-dom";
 import { Path } from "../constant";
-import { MaskAvatar } from "./mask";
-import { Mask } from "../store/mask";
 import { useRef, useEffect } from "react";
 import { showConfirm } from "./ui-lib";
 
@@ -29,7 +27,6 @@ export function ChatItem(props: {
   id: string;
   index: number;
   narrow?: boolean;
-  mask: Mask;
 }) {
   const draggableRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -59,9 +56,6 @@ export function ChatItem(props: {
         >
           {props.narrow ? (
             <div className={styles["chat-item-narrow"]}>
-              <div className={styles["chat-item-avatar"] + " no-dark"}>
-                <MaskAvatar mask={props.mask} />
-              </div>
               <div className={styles["chat-item-narrow-count"]}>
                 {props.count}
               </div>
@@ -99,6 +93,7 @@ export function ChatList(props: { narrow?: boolean }) {
       state.moveSession,
     ],
   );
+
   const chatStore = useChatStore();
   const navigate = useNavigate();
 
@@ -149,7 +144,6 @@ export function ChatList(props: { narrow?: boolean }) {
                   }
                 }}
                 narrow={props.narrow}
-                mask={item.mask}
               />
             ))}
             {provided.placeholder}

@@ -14,15 +14,11 @@ import ExportIcon from "../icons/share.svg";
 import ReturnIcon from "../icons/return.svg";
 import CopyIcon from "../icons/copy.svg";
 import LoadingIcon from "../icons/three-dots.svg";
-import PromptIcon from "../icons/prompt.svg";
-import MaskIcon from "../icons/mask.svg";
 import MaxIcon from "../icons/max.svg";
 import MinIcon from "../icons/min.svg";
 import ResetIcon from "../icons/reload.svg";
 import BreakIcon from "../icons/break.svg";
-import SettingsIcon from "../icons/chat-settings.svg";
 import DeleteIcon from "../icons/clear.svg";
-import PinIcon from "../icons/pin.svg";
 import EditIcon from "../icons/rename.svg";
 
 import LightIcon from "../icons/light.svg";
@@ -42,7 +38,6 @@ import {
   Theme,
   useAppConfig,
   DEFAULT_TOPIC,
-  ModelType,
 } from "../store";
 
 import {
@@ -54,8 +49,7 @@ import {
 
 import dynamic from "next/dynamic";
 
-import { ChatControllerPool } from "../client/controller";
-import { Prompt, usePromptStore } from "../store/prompt";
+import { ChatControllerPool } from "../backend/controller";
 import Locale from "../locales";
 
 import { IconButton } from "./button";
@@ -72,8 +66,6 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { LAST_INPUT_KEY, Path, REQUEST_TIMEOUT_MS } from "../constant";
 import { Avatar } from "./emoji";
-import { MaskAvatar, MaskConfig } from "./mask";
-import { useMaskStore } from "../store/mask";
 import { ChatCommandPrefix, useChatCommand, useCommand } from "../command";
 import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
@@ -82,99 +74,6 @@ import { getClientConfig } from "../config/client";
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
-
-export function SessionConfigModel(props: { onClose: () => void }) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  const maskStore = useMaskStore();
-  const navigate = useNavigate();
-
-  return (
-    <div className="modal-mask">
-      <Modal
-        title={Locale.Context.Edit}
-        onClose={() => props.onClose()}
-        actions={[
-          <IconButton
-            key="reset"
-            icon={<ResetIcon />}
-            bordered
-            text={Locale.Chat.Config.Reset}
-            onClick={async () => {
-              if (await showConfirm(Locale.Memory.ResetConfirm)) {
-                chatStore.updateCurrentSession(
-                  (session) => (session.memoryPrompt = ""),
-                );
-              }
-            }}
-          />,
-          <IconButton
-            key="copy"
-            icon={<CopyIcon />}
-            bordered
-            text={Locale.Chat.Config.SaveAs}
-            onClick={() => {
-              navigate(Path.Masks);
-              setTimeout(() => {
-                maskStore.create(session.mask);
-              }, 500);
-            }}
-          />,
-        ]}
-      >
-        <MaskConfig
-          mask={session.mask}
-          updateMask={(updater) => {
-            const mask = { ...session.mask };
-            updater(mask);
-            chatStore.updateCurrentSession((session) => (session.mask = mask));
-          }}
-          shouldSyncFromGlobal
-          extraListItems={
-            session.mask.modelConfig.sendMemory ? (
-              <ListItem
-                title={`${Locale.Memory.Title} (${session.lastSummarizeIndex} of ${session.messages.length})`}
-                subTitle={session.memoryPrompt || Locale.Memory.EmptyContent}
-              ></ListItem>
-            ) : (
-              <></>
-            )
-          }
-        ></MaskConfig>
-      </Modal>
-    </div>
-  );
-}
-
-function PromptToast(props: {
-  showToast?: boolean;
-  showModal?: boolean;
-  setShowModal: (_: boolean) => void;
-}) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  const context = session.mask.context;
-
-  return (
-    <div className={styles["prompt-toast"]} key="prompt-toast">
-      {props.showToast && (
-        <div
-          className={styles["prompt-toast-inner"] + " clickable"}
-          role="button"
-          onClick={() => props.setShowModal(true)}
-        >
-          <BrainIcon />
-          <span className={styles["prompt-toast-content"]}>
-            {Locale.Context.Toast(context.length)}
-          </span>
-        </div>
-      )}
-      {props.showModal && (
-        <SessionConfigModel onClose={() => props.setShowModal(false)} />
-      )}
-    </div>
-  );
-}
 
 function useSubmitHandler() {
   const config = useAppConfig();
@@ -219,99 +118,6 @@ function useSubmitHandler() {
     submitKey,
     shouldSubmit,
   };
-}
-
-export type RenderPompt = Pick<Prompt, "title" | "content">;
-
-export function PromptHints(props: {
-  prompts: RenderPompt[];
-  onPromptSelect: (prompt: RenderPompt) => void;
-}) {
-  const noPrompts = props.prompts.length === 0;
-  const [selectIndex, setSelectIndex] = useState(0);
-  const selectedRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setSelectIndex(0);
-  }, [props.prompts.length]);
-
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (noPrompts || e.metaKey || e.altKey || e.ctrlKey) {
-        return;
-      }
-      // arrow up / down to select prompt
-      const changeIndex = (delta: number) => {
-        e.stopPropagation();
-        e.preventDefault();
-        const nextIndex = Math.max(
-          0,
-          Math.min(props.prompts.length - 1, selectIndex + delta),
-        );
-        setSelectIndex(nextIndex);
-        selectedRef.current?.scrollIntoView({
-          block: "center",
-        });
-      };
-
-      if (e.key === "ArrowUp") {
-        changeIndex(1);
-      } else if (e.key === "ArrowDown") {
-        changeIndex(-1);
-      } else if (e.key === "Enter") {
-        const selectedPrompt = props.prompts.at(selectIndex);
-        if (selectedPrompt) {
-          props.onPromptSelect(selectedPrompt);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => window.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.prompts.length, selectIndex]);
-
-  if (noPrompts) return null;
-  return (
-    <div className={styles["prompt-hints"]}>
-      {props.prompts.map((prompt, i) => (
-        <div
-          ref={i === selectIndex ? selectedRef : null}
-          className={
-            styles["prompt-hint"] +
-            ` ${i === selectIndex ? styles["prompt-hint-selected"] : ""}`
-          }
-          key={prompt.title + i.toString()}
-          onClick={() => props.onPromptSelect(prompt)}
-          onMouseEnter={() => setSelectIndex(i)}
-        >
-          <div className={styles["hint-title"]}>{prompt.title}</div>
-          <div className={styles["hint-content"]}>{prompt.content}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function ClearContextDivider() {
-  const chatStore = useChatStore();
-
-  return (
-    <div
-      className={styles["clear-context"]}
-      onClick={() =>
-        chatStore.updateCurrentSession(
-          (session) => (session.clearContextIndex = undefined),
-        )
-      }
-    >
-      <div className={styles["clear-context-tips"]}>{Locale.Context.Clear}</div>
-      <div className={styles["clear-context-revert-btn"]}>
-        {Locale.Context.Revert}
-      </div>
-    </div>
-  );
 }
 
 function ChatAction(props: {
@@ -388,9 +194,7 @@ function useScrollToBottom() {
 }
 
 export function ChatActions(props: {
-  showPromptModal: () => void;
   scrollToBottom: () => void;
-  showPromptHints: () => void;
   hitBottom: boolean;
 }) {
   const config = useAppConfig();
@@ -411,18 +215,6 @@ export function ChatActions(props: {
   const couldStop = ChatControllerPool.hasPending();
   const stopAll = () => ChatControllerPool.stopAll();
 
-  // switch model
-  const currentModel = chatStore.currentSession().mask.modelConfig.model;
-  const models = useMemo(
-    () =>
-      config
-        .allModels()
-        .filter((m) => m.available)
-        .map((m) => m.name),
-    [config],
-  );
-  const [showModelSelector, setShowModelSelector] = useState(false);
-
   return (
     <div className={styles["chat-input-actions"]}>
       {couldStop && (
@@ -437,13 +229,6 @@ export function ChatActions(props: {
           onClick={props.scrollToBottom}
           text={Locale.Chat.InputActions.ToBottom}
           icon={<BottomIcon />}
-        />
-      )}
-      {props.hitBottom && (
-        <ChatAction
-          onClick={props.showPromptModal}
-          text={Locale.Chat.InputActions.Settings}
-          icon={<SettingsIcon />}
         />
       )}
 
@@ -464,57 +249,12 @@ export function ChatActions(props: {
       />
 
       <ChatAction
-        onClick={props.showPromptHints}
-        text={Locale.Chat.InputActions.Prompt}
-        icon={<PromptIcon />}
-      />
-
-      <ChatAction
-        onClick={() => {
-          navigate(Path.Masks);
-        }}
-        text={Locale.Chat.InputActions.Masks}
-        icon={<MaskIcon />}
-      />
-
-      <ChatAction
         text={Locale.Chat.InputActions.Clear}
         icon={<BreakIcon />}
         onClick={() => {
-          chatStore.updateCurrentSession((session) => {
-            if (session.clearContextIndex === session.messages.length) {
-              session.clearContextIndex = undefined;
-            } else {
-              session.clearContextIndex = session.messages.length;
-              session.memoryPrompt = ""; // will clear memory
-            }
-          });
+          chatStore.updateCurrentSession((session) => {});
         }}
       />
-
-      <ChatAction
-        onClick={() => setShowModelSelector(true)}
-        text={currentModel}
-        icon={<RobotIcon />}
-      />
-
-      {showModelSelector && (
-        <Selector
-          items={models.map((m) => ({
-            title: m,
-            value: m,
-          }))}
-          onClose={() => setShowModelSelector(false)}
-          onSelection={(s) => {
-            if (s.length === 0) return;
-            chatStore.updateCurrentSession((session) => {
-              session.mask.modelConfig.model = s[0] as ModelType;
-              session.mask.syncGlobalConfig = false;
-            });
-            showToast(s[0]);
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -546,18 +286,6 @@ export function Chat() {
     setHitBottom(isTouchBottom);
   };
 
-  // prompt hints
-  const promptStore = usePromptStore();
-  const [promptHints, setPromptHints] = useState<RenderPompt[]>([]);
-  const onSearch = useDebouncedCallback(
-    (text: string) => {
-      const matchedPrompts = promptStore.search(text);
-      setPromptHints(matchedPrompts);
-    },
-    100,
-    { leading: true, trailing: true },
-  );
-
   // auto grow input
   const [inputRows, setInputRows] = useState(2);
   const measure = useDebouncedCallback(
@@ -585,10 +313,7 @@ export function Chat() {
     newm: () => navigate(Path.NewChat),
     prev: () => chatStore.nextSession(-1),
     next: () => chatStore.nextSession(1),
-    clear: () =>
-      chatStore.updateCurrentSession(
-        (session) => (session.clearContextIndex = session.messages.length),
-      ),
+    clear: () => chatStore.updateCurrentSession((session) => {}),
     del: () => chatStore.deleteSession(chatStore.currentSessionIndex),
   });
 
@@ -597,19 +322,6 @@ export function Chat() {
   const onInput = (text: string) => {
     setUserInput(text);
     const n = text.trim().length;
-
-    // clear search results
-    if (n === 0) {
-      setPromptHints([]);
-    } else if (text.startsWith(ChatCommandPrefix)) {
-      setPromptHints(chatCommands.search(text));
-    } else if (!config.disablePromptHint && n < SEARCH_TEXT_LIMIT) {
-      // check if need to trigger auto completion
-      if (text.startsWith("/")) {
-        let searchText = text.slice(1);
-        onSearch(searchText);
-      }
-    }
   };
 
   const doSubmit = (userInput: string) => {
@@ -617,7 +329,6 @@ export function Chat() {
     const matchCommand = chatCommands.match(userInput);
     if (matchCommand.matched) {
       setUserInput("");
-      setPromptHints([]);
       matchCommand.invoke();
       return;
     }
@@ -625,26 +336,8 @@ export function Chat() {
     chatStore.onUserInput(userInput).then(() => setIsLoading(false));
     localStorage.setItem(LAST_INPUT_KEY, userInput);
     setUserInput("");
-    setPromptHints([]);
     if (!isMobileScreen) inputRef.current?.focus();
     setAutoScroll(true);
-  };
-
-  const onPromptSelect = (prompt: RenderPompt) => {
-    setTimeout(() => {
-      setPromptHints([]);
-
-      const matchedChatCommand = chatCommands.match(prompt.content);
-      if (matchedChatCommand.matched) {
-        // if user is selecting a chat command, just trigger it
-        matchedChatCommand.invoke();
-        setUserInput("");
-      } else {
-        // or fill the prompt
-        setUserInput(prompt.content);
-      }
-      inputRef.current?.focus();
-    }, 30);
   };
 
   // stop response
@@ -658,10 +351,6 @@ export function Chat() {
       session.messages.forEach((m) => {
         // check if should stop all stale messages
         if (m.isError || new Date(m.date).getTime() < stopTiming) {
-          if (m.streaming) {
-            m.streaming = false;
-          }
-
           if (m.content.length === 0) {
             m.isError = true;
             m.content = prettyObject({
@@ -671,12 +360,6 @@ export function Chat() {
           }
         }
       });
-
-      // auto sync mask config from global config
-      if (session.mask.syncGlobalConfig) {
-        console.log("[Mask] syncing from global, name = ", session.mask.name);
-        session.mask.modelConfig = { ...config.modelConfig };
-      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -693,7 +376,7 @@ export function Chat() {
       e.preventDefault();
       return;
     }
-    if (shouldSubmit(e) && promptHints.length === 0) {
+    if (shouldSubmit(e)) {
       doSubmit(userInput);
       e.preventDefault();
     }
@@ -790,23 +473,7 @@ export function Chat() {
     inputRef.current?.focus();
   };
 
-  const onPinMessage = (message: ChatMessage) => {
-    chatStore.updateCurrentSession((session) =>
-      session.mask.context.push(message),
-    );
-
-    showToast(Locale.Chat.Actions.PinToastContent, {
-      text: Locale.Chat.Actions.PinToastAction,
-      onClick: () => {
-        setShowPromptModal(true);
-      },
-    });
-  };
-
-  const context: RenderMessage[] = session.mask.hideContext
-    ? []
-    : session.mask.context.slice();
-
+  const context: RenderMessage[] = [];
   const accessStore = useAccessStore();
 
   if (
@@ -819,12 +486,6 @@ export function Chat() {
     }
     context.push(copiedHello);
   }
-
-  // clear context index = context length + index in messages
-  const clearContextIndex =
-    (session.clearContextIndex ?? -1) >= 0
-      ? session.clearContextIndex! + context.length
-      : -1;
 
   // preview messages
   const messages = context
@@ -944,12 +605,6 @@ export function Chat() {
             </div>
           )}
         </div>
-
-        <PromptToast
-          showToast={!hitBottom}
-          showModal={showPromptModal}
-          setShowModal={setShowPromptModal}
-        />
       </div>
 
       <div
@@ -970,142 +625,100 @@ export function Chat() {
             i > 0 &&
             !(message.preview || message.content.length === 0) &&
             !isContext;
-          const showTyping = message.preview || message.streaming;
-
-          const shouldShowClearContextDivider = i === clearContextIndex - 1;
+          const showTyping = message.preview;
 
           return (
-            <>
-              <div
-                key={i}
-                className={
-                  isUser ? styles["chat-message-user"] : styles["chat-message"]
-                }
-              >
-                <div className={styles["chat-message-container"]}>
-                  <div className={styles["chat-message-header"]}>
-                    <div className={styles["chat-message-avatar"]}>
-                      <div className={styles["chat-message-edit"]}>
-                        <IconButton
-                          icon={<EditIcon />}
-                          onClick={async () => {
-                            const newMessage = await showPrompt(
-                              Locale.Chat.Actions.Edit,
-                              message.content,
-                              10,
+            <div
+              key={i}
+              className={
+                isUser ? styles["chat-message-user"] : styles["chat-message"]
+              }
+            >
+              <div className={styles["chat-message-container"]}>
+                <div className={styles["chat-message-header"]}>
+                  <div className={styles["chat-message-avatar"]}>
+                    <div className={styles["chat-message-edit"]}>
+                      <IconButton
+                        icon={<EditIcon />}
+                        onClick={async () => {
+                          const newMessage = await showPrompt(
+                            Locale.Chat.Actions.Edit,
+                            message.content,
+                            10,
+                          );
+                          chatStore.updateCurrentSession((session) => {
+                            const m = session.messages.find(
+                              (m) => m.id === message.id,
                             );
-                            chatStore.updateCurrentSession((session) => {
-                              const m = session.messages.find(
-                                (m) => m.id === message.id,
-                              );
-                              if (m) {
-                                m.content = newMessage;
-                              }
-                            });
-                          }}
-                        ></IconButton>
-                      </div>
-                      {isUser ? (
-                        <Avatar avatar={config.avatar} />
-                      ) : (
-                        <MaskAvatar mask={session.mask} />
-                      )}
+                            if (m) {
+                              m.content = newMessage;
+                            }
+                          });
+                        }}
+                      ></IconButton>
                     </div>
-
-                    {showActions && (
-                      <div className={styles["chat-message-actions"]}>
-                        <div className={styles["chat-input-actions"]}>
-                          {message.streaming ? (
-                            <ChatAction
-                              text={Locale.Chat.Actions.Stop}
-                              icon={<StopIcon />}
-                              onClick={() => onUserStop(message.id ?? i)}
-                            />
-                          ) : (
-                            <>
-                              <ChatAction
-                                text={Locale.Chat.Actions.Retry}
-                                icon={<ResetIcon />}
-                                onClick={() => onResend(message)}
-                              />
-
-                              <ChatAction
-                                text={Locale.Chat.Actions.Delete}
-                                icon={<DeleteIcon />}
-                                onClick={() => onDelete(message.id ?? i)}
-                              />
-
-                              <ChatAction
-                                text={Locale.Chat.Actions.Pin}
-                                icon={<PinIcon />}
-                                onClick={() => onPinMessage(message)}
-                              />
-                              <ChatAction
-                                text={Locale.Chat.Actions.Copy}
-                                icon={<CopyIcon />}
-                                onClick={() => copyToClipboard(message.content)}
-                              />
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                    <Avatar avatar={config.avatar} />
                   </div>
-                  {showTyping && (
-                    <div className={styles["chat-message-status"]}>
-                      {Locale.Chat.Typing}
+                  {showActions && (
+                    <div className={styles["chat-message-actions"]}>
+                      <div className={styles["chat-input-actions"]}>
+                        <ChatAction
+                          text={Locale.Chat.Actions.Retry}
+                          icon={<ResetIcon />}
+                          onClick={() => onResend(message)}
+                        />
+
+                        <ChatAction
+                          text={Locale.Chat.Actions.Delete}
+                          icon={<DeleteIcon />}
+                          onClick={() => onDelete(message.id ?? i)}
+                        />
+
+                        <ChatAction
+                          text={Locale.Chat.Actions.Copy}
+                          icon={<CopyIcon />}
+                          onClick={() => copyToClipboard(message.content)}
+                        />
+                      </div>
                     </div>
                   )}
-                  <div className={styles["chat-message-item"]}>
-                    <Markdown
-                      content={message.content}
-                      loading={
-                        (message.preview || message.content.length === 0) &&
-                        !isUser
-                      }
-                      onContextMenu={(e) => onRightClick(e, message)}
-                      onDoubleClickCapture={() => {
-                        if (!isMobileScreen) return;
-                        setUserInput(message.content);
-                      }}
-                      fontSize={fontSize}
-                      parentRef={scrollRef}
-                      defaultShow={i >= messages.length - 10}
-                    />
+                </div>
+                {showTyping && (
+                  <div className={styles["chat-message-status"]}>
+                    {Locale.Chat.Typing}
                   </div>
+                )}
+                <div className={styles["chat-message-item"]}>
+                  <Markdown
+                    content={message.content}
+                    loading={
+                      (message.preview || message.content.length === 0) &&
+                      !isUser
+                    }
+                    onContextMenu={(e) => onRightClick(e, message)}
+                    onDoubleClickCapture={() => {
+                      if (!isMobileScreen) return;
+                      setUserInput(message.content);
+                    }}
+                    fontSize={fontSize}
+                    parentRef={scrollRef}
+                    defaultShow={i >= messages.length - 10}
+                  />
+                </div>
 
-                  <div className={styles["chat-message-action-date"]}>
-                    {isContext
-                      ? Locale.Chat.IsContext
-                      : message.date.toLocaleString()}
-                  </div>
+                <div className={styles["chat-message-action-date"]}>
+                  {isContext
+                    ? Locale.Chat.IsContext
+                    : message.date.toLocaleString()}
                 </div>
               </div>
-              {shouldShowClearContextDivider && <ClearContextDivider />}
-            </>
+            </div>
           );
         })}
       </div>
 
       <div className={styles["chat-input-panel"]}>
-        <PromptHints prompts={promptHints} onPromptSelect={onPromptSelect} />
-
-        <ChatActions
-          showPromptModal={() => setShowPromptModal(true)}
-          scrollToBottom={scrollToBottom}
-          hitBottom={hitBottom}
-          showPromptHints={() => {
-            // Click again to close
-            if (promptHints.length > 0) {
-              setPromptHints([]);
-              return;
-            }
-
-            inputRef.current?.focus();
-            setUserInput("/");
-            onSearch("");
-          }}
-        />
+        <ChatActions scrollToBottom={scrollToBottom} hitBottom={hitBottom} />
         <div className={styles["chat-input-panel-inner"]}>
           <textarea
             ref={inputRef}

@@ -8,7 +8,6 @@ import GithubIcon from "../icons/github.svg";
 import ChatGptIcon from "../icons/chatgpt.svg";
 import AddIcon from "../icons/add.svg";
 import CloseIcon from "../icons/close.svg";
-import MaskIcon from "../icons/mask.svg";
 import PluginIcon from "../icons/plugin.svg";
 
 import Locale from "../locales";
@@ -129,13 +128,6 @@ export function SideBar(props: { className?: string }) {
 
       <div className={styles["sidebar-header-bar"]}>
         <IconButton
-          icon={<MaskIcon />}
-          text={shouldNarrow ? undefined : Locale.Mask.Name}
-          className={styles["sidebar-bar-button"]}
-          onClick={() => navigate(Path.NewChat, { state: { fromHome: true } })}
-          shadow
-        />
-        <IconButton
           icon={<PluginIcon />}
           text={shouldNarrow ? undefined : Locale.Plugin.Name}
           className={styles["sidebar-bar-button"]}
@@ -183,12 +175,8 @@ export function SideBar(props: { className?: string }) {
             icon={<AddIcon />}
             text={shouldNarrow ? undefined : Locale.Home.NewChat}
             onClick={() => {
-              if (config.dontShowMaskSplashScreen) {
-                chatStore.newSession();
-                navigate(Path.Chat);
-              } else {
-                navigate(Path.NewChat);
-              }
+              chatStore.newSession();
+              navigate(Path.Chat);
             }}
             shadow
           />

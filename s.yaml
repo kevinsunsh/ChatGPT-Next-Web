@@ -1,0 +1,47 @@
+edition: 1.0.0
+name: dcc-frontend-next
+access: default
+
+vars:
+  region: "cn-hangzhou"
+  dcc_service:
+    name: "dcc-frontend-next"
+    description: "Serverless Devs Website Service"
+
+services:
+  dcc-frontend-next: # 业务名称/模块名称
+    component: fc # 组件名称
+    actions:
+      pre-deploy:
+        - component: fc build --use-docker --dockerfile ./Dockerfile
+    props: # 组件的属性值
+      region: ${vars.region}
+      service: ${vars.dcc_service}
+      function:
+        name: "dcc-frontend-func"
+        description: "Serverless Devs Website Docusaurus Function"
+        caPort: 3000
+        memorySize: 512
+        timeout: 30
+        environmentVariables:
+          CHAT_AGENT_BASE_URL: https://chat-agend-func-chatagent-tibmulqgkc.cn-hangzhou.fcapp.run
+        runtime: custom-container
+        customContainerConfig:
+          image: "registry.cn-hangzhou.aliyuncs.com/kevin_sun/dcc_frontend:0.0.1"
+        codeUri: ./
+      triggers:
+        - name: httpTrigger
+          type: http
+          config:
+            authType: anonymous
+            methods:
+              - GET
+              - POST
+      customDomains:
+        - domainName: auto
+          protocol: HTTP
+          routeConfigs:
+            - path: /*
+              methods:
+                - GET
+                - POST

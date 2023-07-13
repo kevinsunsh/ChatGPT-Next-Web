@@ -6,7 +6,6 @@ type Command = (param: string) => void;
 interface Commands {
   fill?: Command;
   submit?: Command;
-  mask?: Command;
 }
 
 export function useCommand(commands: Commands = {}) {

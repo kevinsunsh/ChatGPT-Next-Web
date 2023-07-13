@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { FETCH_COMMIT_URL, FETCH_TAG_URL, StoreKey } from "../constant";
-import { api } from "../client/api";
+import { api } from "../backend/api";
 import { getClientConfig } from "../config/client";
 
 export interface UpdateStore {

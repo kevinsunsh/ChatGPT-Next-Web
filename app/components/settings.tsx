@@ -20,7 +20,6 @@ import {
   Select,
   showConfirm,
 } from "./ui-lib";
-import { ModelConfigList } from "./model-config";
 
 import { IconButton } from "./button";
 import {
@@ -41,7 +40,6 @@ import Locale, {
 import { copyToClipboard } from "../utils";
 import Link from "next/link";
 import { Path, RELEASE_URL, UPDATE_URL } from "../constant";
-import { Prompt, SearchService, usePromptStore } from "../store/prompt";
 import { ErrorBoundary } from "./error";
 import { InputRange } from "./input-range";
 import { useNavigate } from "react-router-dom";
@@ -49,159 +47,6 @@ import { Avatar, AvatarPicker } from "./emoji";
 import { getClientConfig } from "../config/client";
 import { useSyncStore } from "../store/sync";
 import { nanoid } from "nanoid";
-
-function EditPromptModal(props: { id: string; onClose: () => void }) {
-  const promptStore = usePromptStore();
-  const prompt = promptStore.get(props.id);
-
-  return prompt ? (
-    <div className="modal-mask">
-      <Modal
-        title={Locale.Settings.Prompt.EditModal.Title}
-        onClose={props.onClose}
-        actions={[
-          <IconButton
-            key=""
-            onClick={props.onClose}
-            text={Locale.UI.Confirm}
-            bordered
-          />,
-        ]}
-      >
-        <div className={styles["edit-prompt-modal"]}>
-          <input
-            type="text"
-            value={prompt.title}
-            readOnly={!prompt.isUser}
-            className={styles["edit-prompt-title"]}
-            onInput={(e) =>
-              promptStore.update(
-                props.id,
-                (prompt) => (prompt.title = e.currentTarget.value),
-              )
-            }
-          ></input>
-          <Input
-            value={prompt.content}
-            readOnly={!prompt.isUser}
-            className={styles["edit-prompt-content"]}
-            rows={10}
-            onInput={(e) =>
-              promptStore.update(
-                props.id,
-                (prompt) => (prompt.content = e.currentTarget.value),
-              )
-            }
-          ></Input>
-        </div>
-      </Modal>
-    </div>
-  ) : null;
-}
-
-function UserPromptModal(props: { onClose?: () => void }) {
-  const promptStore = usePromptStore();
-  const userPrompts = promptStore.getUserPrompts();
-  const builtinPrompts = SearchService.builtinPrompts;
-  const allPrompts = userPrompts.concat(builtinPrompts);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchPrompts, setSearchPrompts] = useState<Prompt[]>([]);
-  const prompts = searchInput.length > 0 ? searchPrompts : allPrompts;
-
-  const [editingPromptId, setEditingPromptId] = useState<string>();
-
-  useEffect(() => {
-    if (searchInput.length > 0) {
-      const searchResult = SearchService.search(searchInput);
-      setSearchPrompts(searchResult);
-    } else {
-      setSearchPrompts([]);
-    }
-  }, [searchInput]);
-
-  return (
-    <div className="modal-mask">
-      <Modal
-        title={Locale.Settings.Prompt.Modal.Title}
-        onClose={() => props.onClose?.()}
-        actions={[
-          <IconButton
-            key="add"
-            onClick={() =>
-              promptStore.add({
-                id: nanoid(),
-                createdAt: Date.now(),
-                title: "Empty Prompt",
-                content: "Empty Prompt Content",
-              })
-            }
-            icon={<AddIcon />}
-            bordered
-            text={Locale.Settings.Prompt.Modal.Add}
-          />,
-        ]}
-      >
-        <div className={styles["user-prompt-modal"]}>
-          <input
-            type="text"
-            className={styles["user-prompt-search"]}
-            placeholder={Locale.Settings.Prompt.Modal.Search}
-            value={searchInput}
-            onInput={(e) => setSearchInput(e.currentTarget.value)}
-          ></input>
-
-          <div className={styles["user-prompt-list"]}>
-            {prompts.map((v, _) => (
-              <div className={styles["user-prompt-item"]} key={v.id ?? v.title}>
-                <div className={styles["user-prompt-header"]}>
-                  <div className={styles["user-prompt-title"]}>{v.title}</div>
-                  <div className={styles["user-prompt-content"] + " one-line"}>
-                    {v.content}
-                  </div>
-                </div>
-
-                <div className={styles["user-prompt-buttons"]}>
-                  {v.isUser && (
-                    <IconButton
-                      icon={<ClearIcon />}
-                      className={styles["user-prompt-button"]}
-                      onClick={() => promptStore.remove(v.id!)}
-                    />
-                  )}
-                  {v.isUser ? (
-                    <IconButton
-                      icon={<EditIcon />}
-                      className={styles["user-prompt-button"]}
-                      onClick={() => setEditingPromptId(v.id)}
-                    />
-                  ) : (
-                    <IconButton
-                      icon={<EyeIcon />}
-                      className={styles["user-prompt-button"]}
-                      onClick={() => setEditingPromptId(v.id)}
-                    />
-                  )}
-                  <IconButton
-                    icon={<CopyIcon />}
-                    className={styles["user-prompt-button"]}
-                    onClick={() => copyToClipboard(v.content)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Modal>
-
-      {editingPromptId !== undefined && (
-        <EditPromptModal
-          id={editingPromptId!}
-          onClose={() => setEditingPromptId(undefined)}
-        />
-      )}
-    </div>
-  );
-}
 
 function DangerItems() {
   const chatStore = useChatStore();
@@ -342,10 +187,6 @@ export function Settings() {
   };
   const [loadingUsage, setLoadingUsage] = useState(false);
   function checkUsage(force = false) {
-    if (accessStore.hideBalanceQuery) {
-      return;
-    }
-
     setLoadingUsage(true);
     updateStore.updateUsage(force).finally(() => {
       setLoadingUsage(false);
@@ -358,11 +199,6 @@ export function Settings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-
-  const promptStore = usePromptStore();
-  const builtinCount = SearchService.count.builtin;
-  const customCount = promptStore.getUserPrompts().length ?? 0;
-  const [shouldShowPromptModal, setShowPromptModal] = useState(false);
 
   const showUsage = accessStore.isAuthorized();
   useEffect(() => {
@@ -547,73 +383,6 @@ export function Settings() {
         </List>
 
         <List>
-          <ListItem
-            title={Locale.Settings.Mask.Splash.Title}
-            subTitle={Locale.Settings.Mask.Splash.SubTitle}
-          >
-            <input
-              type="checkbox"
-              checked={!config.dontShowMaskSplashScreen}
-              onChange={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.dontShowMaskSplashScreen =
-                      !e.currentTarget.checked),
-                )
-              }
-            ></input>
-          </ListItem>
-
-          <ListItem
-            title={Locale.Settings.Mask.Builtin.Title}
-            subTitle={Locale.Settings.Mask.Builtin.SubTitle}
-          >
-            <input
-              type="checkbox"
-              checked={config.hideBuiltinMasks}
-              onChange={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.hideBuiltinMasks = e.currentTarget.checked),
-                )
-              }
-            ></input>
-          </ListItem>
-        </List>
-
-        <List>
-          <ListItem
-            title={Locale.Settings.Prompt.Disable.Title}
-            subTitle={Locale.Settings.Prompt.Disable.SubTitle}
-          >
-            <input
-              type="checkbox"
-              checked={config.disablePromptHint}
-              onChange={(e) =>
-                updateConfig(
-                  (config) =>
-                    (config.disablePromptHint = e.currentTarget.checked),
-                )
-              }
-            ></input>
-          </ListItem>
-
-          <ListItem
-            title={Locale.Settings.Prompt.List}
-            subTitle={Locale.Settings.Prompt.ListCount(
-              builtinCount,
-              customCount,
-            )}
-          >
-            <IconButton
-              icon={<EditIcon />}
-              text={Locale.Settings.Prompt.Edit}
-              onClick={() => setShowPromptModal(true)}
-            />
-          </ListItem>
-        </List>
-
-        <List>
           {showAccessCode ? (
             <ListItem
               title={Locale.Settings.AccessCode.Title}
@@ -631,97 +400,9 @@ export function Settings() {
           ) : (
             <></>
           )}
-
-          {!accessStore.hideUserApiKey ? (
-            <>
-              <ListItem
-                title={Locale.Settings.Endpoint.Title}
-                subTitle={Locale.Settings.Endpoint.SubTitle}
-              >
-                <input
-                  type="text"
-                  value={accessStore.openaiUrl}
-                  placeholder="https://api.openai.com/"
-                  onChange={(e) =>
-                    accessStore.updateOpenAiUrl(e.currentTarget.value)
-                  }
-                ></input>
-              </ListItem>
-              <ListItem
-                title={Locale.Settings.Token.Title}
-                subTitle={Locale.Settings.Token.SubTitle}
-              >
-                <PasswordInput
-                  value={accessStore.token}
-                  type="text"
-                  placeholder={Locale.Settings.Token.Placeholder}
-                  onChange={(e) => {
-                    accessStore.updateToken(e.currentTarget.value);
-                  }}
-                />
-              </ListItem>
-            </>
-          ) : null}
-
-          {!accessStore.hideBalanceQuery ? (
-            <ListItem
-              title={Locale.Settings.Usage.Title}
-              subTitle={
-                showUsage
-                  ? loadingUsage
-                    ? Locale.Settings.Usage.IsChecking
-                    : Locale.Settings.Usage.SubTitle(
-                        usage?.used ?? "[?]",
-                        usage?.subscription ?? "[?]",
-                      )
-                  : Locale.Settings.Usage.NoAccess
-              }
-            >
-              {!showUsage || loadingUsage ? (
-                <div />
-              ) : (
-                <IconButton
-                  icon={<ResetIcon></ResetIcon>}
-                  text={Locale.Settings.Usage.Check}
-                  onClick={() => checkUsage(true)}
-                />
-              )}
-            </ListItem>
-          ) : null}
-
-          <ListItem
-            title={Locale.Settings.CustomModel.Title}
-            subTitle={Locale.Settings.CustomModel.SubTitle}
-          >
-            <input
-              type="text"
-              value={config.customModels}
-              placeholder="model1,model2,model3"
-              onChange={(e) =>
-                config.update(
-                  (config) => (config.customModels = e.currentTarget.value),
-                )
-              }
-            ></input>
-          </ListItem>
         </List>
 
         <SyncItems />
-
-        <List>
-          <ModelConfigList
-            modelConfig={config.modelConfig}
-            updateConfig={(updater) => {
-              const modelConfig = { ...config.modelConfig };
-              updater(modelConfig);
-              config.update((config) => (config.modelConfig = modelConfig));
-            }}
-          />
-        </List>
-
-        {shouldShowPromptModal && (
-          <UserPromptModal onClose={() => setShowPromptModal(false)} />
-        )}
 
         <DangerItems />
       </div>
