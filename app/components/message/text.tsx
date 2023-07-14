@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ITextElement } from "../../store/element";
 import { ReactMarkdown } from "react-markdown/lib/react-markdown";
 import remarkGfm from "remark-gfm";
+import styles from "./chat.module.scss";
 
 interface Props {
   element: ITextElement;
@@ -42,7 +43,10 @@ export default function TextElement({ element }: Props) {
   }
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown-body">
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      className={styles["chat-message-item"]}
+    >
       {content}
     </ReactMarkdown>
   );

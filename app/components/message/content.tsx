@@ -56,8 +56,8 @@ export default memo(function MessageContent({
         <ReactMarkdown remarkPlugins={[remarkGfm]} className="markdown-body">
           {content ?? ""}
         </ReactMarkdown>
+        <InlinedElements elements={elements} />
       </div>
-      <InlinedElements elements={elements} />
       <div className={styles["chat-message-action-date"]}>{date}</div>
     </div>
   );

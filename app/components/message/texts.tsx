@@ -11,7 +11,7 @@ export default function InlinedTextList({ items }: Props) {
     <Stack spacing={1}>
       {items.map((el, i) => {
         return (
-          <Alert color="info" key={i} icon={false}>
+          <Alert color="success" key={i} icon={false}>
             <AlertTitle>{el.name}</AlertTitle>
             <TextElement element={el} />
           </Alert>
