@@ -7,26 +7,21 @@ import React, {
   useCallback,
 } from "react";
 
-import SendWhiteIcon from "../icons/send-white.svg";
-import BrainIcon from "../icons/brain.svg";
-import RenameIcon from "../icons/rename.svg";
-import ExportIcon from "../icons/share.svg";
-import ReturnIcon from "../icons/return.svg";
-import CopyIcon from "../icons/copy.svg";
-import LoadingIcon from "../icons/three-dots.svg";
-import MaxIcon from "../icons/max.svg";
-import MinIcon from "../icons/min.svg";
-import ResetIcon from "../icons/reload.svg";
-import BreakIcon from "../icons/break.svg";
-import DeleteIcon from "../icons/clear.svg";
-import EditIcon from "../icons/rename.svg";
-
-import LightIcon from "../icons/light.svg";
-import DarkIcon from "../icons/dark.svg";
-import AutoIcon from "../icons/auto.svg";
-import BottomIcon from "../icons/bottom.svg";
-import StopIcon from "../icons/pause.svg";
-import RobotIcon from "../icons/robot.svg";
+import SendWhiteIcon from "../../icons/send-white.svg";
+import RenameIcon from "../../icons/rename.svg";
+import ExportIcon from "../../icons/share.svg";
+import ReturnIcon from "../../icons/return.svg";
+import LoadingIcon from "../../icons/three-dots.svg";
+import MaxIcon from "../../icons/max.svg";
+import MinIcon from "../../icons/min.svg";
+import BreakIcon from "../../icons/break.svg";
+import LightIcon from "../../icons/light.svg";
+import DarkIcon from "../../icons/dark.svg";
+import AutoIcon from "../../icons/auto.svg";
+import BottomIcon from "../../icons/bottom.svg";
+import StopIcon from "../../icons/pause.svg";
+import { Stack } from "@mui/material";
+import MessageContent from "./content";
 
 import {
   ChatMessage,
@@ -38,21 +33,21 @@ import {
   Theme,
   useAppConfig,
   DEFAULT_TOPIC,
-} from "../store";
+} from "../../store";
 
 import {
   copyToClipboard,
   selectOrCopy,
   autoGrowTextArea,
   useMobileScreen,
-} from "../utils";
+} from "../../utils";
 
 import dynamic from "next/dynamic";
 
-import { ChatControllerPool } from "../backend/controller";
-import Locale from "../locales";
+import { ChatControllerPool } from "../../backend/controller";
+import Locale from "../../locales";
 
-import { IconButton } from "./button";
+import { IconButton } from "../button";
 import styles from "./chat.module.scss";
 
 import {
@@ -62,16 +57,16 @@ import {
   showConfirm,
   showPrompt,
   showToast,
-} from "./ui-lib";
+} from "../ui-lib";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LAST_INPUT_KEY, Path, REQUEST_TIMEOUT_MS } from "../constant";
-import { Avatar } from "./emoji";
-import { ChatCommandPrefix, useChatCommand, useCommand } from "../command";
-import { prettyObject } from "../utils/format";
-import { ExportMessageModal } from "./exporter";
-import { getClientConfig } from "../config/client";
+import { LAST_INPUT_KEY, Path, REQUEST_TIMEOUT_MS } from "../../constant";
+import { Avatar } from "../emoji";
+import { ChatCommandPrefix, useChatCommand, useCommand } from "../../command";
+import { prettyObject } from "../../utils/format";
+import { ExportMessageModal } from "../exporter";
+import { getClientConfig } from "../../config/client";
 
-const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
+const Markdown = dynamic(async () => (await import("../markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
 
@@ -120,7 +115,31 @@ function useSubmitHandler() {
   };
 }
 
-function ChatAction(props: {
+function useScrollToBottom() {
+  // for auto-scroll
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const scrollToBottom = useCallback(() => {
+    const dom = scrollRef.current;
+    if (dom) {
+      requestAnimationFrame(() => dom.scrollTo(0, dom.scrollHeight));
+    }
+  }, []);
+
+  // auto scroll
+  useEffect(() => {
+    autoScroll && scrollToBottom();
+  });
+
+  return {
+    scrollRef,
+    autoScroll,
+    setAutoScroll,
+    scrollToBottom,
+  };
+}
+
+export function ChatAction(props: {
   text: string;
   icon: JSX.Element;
   onClick: () => void;
@@ -167,30 +186,6 @@ function ChatAction(props: {
       </div>
     </div>
   );
-}
-
-function useScrollToBottom() {
-  // for auto-scroll
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const scrollToBottom = useCallback(() => {
-    const dom = scrollRef.current;
-    if (dom) {
-      requestAnimationFrame(() => dom.scrollTo(0, dom.scrollHeight));
-    }
-  }, []);
-
-  // auto scroll
-  useEffect(() => {
-    autoScroll && scrollToBottom();
-  });
-
-  return {
-    scrollRef,
-    autoScroll,
-    setAutoScroll,
-    scrollToBottom,
-  };
 }
 
 export function ChatActions(props: {
@@ -620,13 +615,6 @@ export function Chat() {
       >
         {messages.map((message, i) => {
           const isUser = message.role === "user";
-          const isContext = i < context.length;
-          const showActions =
-            i > 0 &&
-            !(message.preview || message.content.length === 0) &&
-            !isContext;
-          const showTyping = message.preview;
-
           return (
             <div
               key={i}
@@ -634,84 +622,12 @@ export function Chat() {
                 isUser ? styles["chat-message-user"] : styles["chat-message"]
               }
             >
-              <div className={styles["chat-message-container"]}>
-                <div className={styles["chat-message-header"]}>
-                  <div className={styles["chat-message-avatar"]}>
-                    <div className={styles["chat-message-edit"]}>
-                      <IconButton
-                        icon={<EditIcon />}
-                        onClick={async () => {
-                          const newMessage = await showPrompt(
-                            Locale.Chat.Actions.Edit,
-                            message.content,
-                            10,
-                          );
-                          chatStore.updateCurrentSession((session) => {
-                            const m = session.messages.find(
-                              (m) => m.id === message.id,
-                            );
-                            if (m) {
-                              m.content = newMessage;
-                            }
-                          });
-                        }}
-                      ></IconButton>
-                    </div>
-                    <Avatar avatar={config.avatar} />
-                  </div>
-                  {showActions && (
-                    <div className={styles["chat-message-actions"]}>
-                      <div className={styles["chat-input-actions"]}>
-                        <ChatAction
-                          text={Locale.Chat.Actions.Retry}
-                          icon={<ResetIcon />}
-                          onClick={() => onResend(message)}
-                        />
-
-                        <ChatAction
-                          text={Locale.Chat.Actions.Delete}
-                          icon={<DeleteIcon />}
-                          onClick={() => onDelete(message.id ?? i)}
-                        />
-
-                        <ChatAction
-                          text={Locale.Chat.Actions.Copy}
-                          icon={<CopyIcon />}
-                          onClick={() => copyToClipboard(message.content)}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {showTyping && (
-                  <div className={styles["chat-message-status"]}>
-                    {Locale.Chat.Typing}
-                  </div>
-                )}
-                <div className={styles["chat-message-item"]}>
-                  <Markdown
-                    content={message.content}
-                    loading={
-                      (message.preview || message.content.length === 0) &&
-                      !isUser
-                    }
-                    onContextMenu={(e) => onRightClick(e, message)}
-                    onDoubleClickCapture={() => {
-                      if (!isMobileScreen) return;
-                      setUserInput(message.content);
-                    }}
-                    fontSize={fontSize}
-                    parentRef={scrollRef}
-                    defaultShow={i >= messages.length - 10}
-                  />
-                </div>
-
-                <div className={styles["chat-message-action-date"]}>
-                  {isContext
-                    ? Locale.Chat.IsContext
-                    : message.date.toLocaleString()}
-                </div>
-              </div>
+              <MessageContent
+                authorIsUser={isUser}
+                elements={message.elements}
+                content={message.content}
+                date={message.date}
+              />
             </div>
           );
         })}

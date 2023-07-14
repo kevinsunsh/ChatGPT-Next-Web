@@ -7,8 +7,7 @@ export const RELEASE_URL = `${REPO_URL}/releases`;
 export const FETCH_COMMIT_URL = `https://api.github.com/repos/${OWNER}/${REPO}/commits?per_page=1`;
 export const FETCH_TAG_URL = `https://api.github.com/repos/${OWNER}/${REPO}/tags?per_page=1`;
 export const RUNTIME_CONFIG_DOM = "danger-runtime-config";
-export const DEFAULT_BACKEND_HOST =
-  "https://chat-agend-func-chatagent-tibmulqgkc.cn-hangzhou.fcapp.run"; // ?? "http://0.0.0.0:9000";
+export const DEFAULT_BACKEND_HOST = "http://0.0.0.0:9000";
 console.log("[Next] DEFAULT_BACKEND_HOST", DEFAULT_BACKEND_HOST);
 
 export enum Path {

@@ -240,6 +240,7 @@ export function RenderExport(props: {
         id: i.toString(),
         role: role as any,
         content: v.innerHTML,
+        elements: [],
         topic: "",
         date: "",
       };

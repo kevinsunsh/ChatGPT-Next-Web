@@ -17,8 +17,10 @@ import { prettyObject } from "../utils/format";
 import { estimateTokenLength } from "../utils/token";
 import { nanoid } from "nanoid";
 import { getHeaders, ServerSessions } from "../backend/api";
+import { IElements } from "./element";
 
 export type ChatMessage = RequestMessage & {
+  elements: IElements;
   date: string;
   isError?: boolean;
   id: string;
@@ -30,6 +32,7 @@ export function createMessage(override: Partial<ChatMessage>): ChatMessage {
     date: new Date().toLocaleString(),
     role: "user",
     content: "",
+    elements: [],
     topic: "",
     ...override,
   };
@@ -298,7 +301,8 @@ export const useChatStore = create<ChatStore>()(
           message: userMessage,
           onFinish(message) {
             if (message) {
-              botMessage.content = message;
+              botMessage.content = message.content;
+              botMessage.elements = message.elements;
               get().onNewMessage(botMessage);
             }
             ChatControllerPool.remove(session.id, botMessage.id);

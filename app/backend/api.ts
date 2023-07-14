@@ -13,7 +13,7 @@ export interface RequestMessage {
 
 export interface ChatOptions {
   message: RequestMessage;
-  onFinish: (message: string) => void;
+  onFinish: (message: ChatMessage) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;
 }

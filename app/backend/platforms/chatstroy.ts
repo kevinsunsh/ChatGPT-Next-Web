@@ -3,7 +3,12 @@ import {
   BackendPath,
   REQUEST_TIMEOUT_MS,
 } from "@/app/constant";
-import { useAccessStore, useAppConfig, useChatStore } from "@/app/store";
+import {
+  ChatMessage,
+  useAccessStore,
+  useAppConfig,
+  useChatStore,
+} from "@/app/store";
 
 import { ChatOptions, getHeaders, LLMApi, LLMUsage } from "../api";
 import Locale from "../../locales";
@@ -12,14 +17,12 @@ import {
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
 import { prettyObject } from "@/app/utils/format";
+import { ITextElement } from "../../store/element";
 
-export interface BackendListModelResponse {
-  object: string;
-  data: Array<{
-    id: string;
-    object: string;
-    root: string;
-  }>;
+export interface BackendResponse {
+  chat_result: string;
+  elements_result: string;
+  article_result: string;
 }
 
 export class ChatStroyApi implements LLMApi {
@@ -39,8 +42,22 @@ export class ChatStroyApi implements LLMApi {
     return [backendUrl, path].join("/");
   }
 
-  extractMessage(res: any) {
-    return prettyObject(res);
+  extractMessage(res: BackendResponse) {
+    return {
+      content: res.chat_result,
+      elements: [
+        {
+          name: "elements",
+          type: "text",
+          content: prettyObject(res.elements_result),
+        } as ITextElement,
+        {
+          name: "article",
+          type: "text",
+          content: res.article_result,
+        } as ITextElement,
+      ],
+    } as ChatMessage;
   }
 
   async chat(options: ChatOptions) {
@@ -74,8 +91,9 @@ export class ChatStroyApi implements LLMApi {
       clearTimeout(requestTimeoutId);
 
       const resJson = await res.json();
-      console.log("[Request] resJson: ", resJson);
-      const message = this.extractMessage(resJson);
+      const response = resJson as BackendResponse;
+      console.log("[Request] response: ", response);
+      const message = this.extractMessage(response);
       options.onFinish(message);
     } catch (e) {
       console.log("[Request] failed to make a chat reqeust", e);
