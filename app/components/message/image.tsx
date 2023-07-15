@@ -19,17 +19,15 @@ const handleImageClick = (name: string, src: string) => {
 
 export default function ImageElement({ element }: Props) {
   const src = element.url || URL.createObjectURL(new Blob([element.content!]));
-  const className = `${element.display}-image`;
+  const className = `inline-image`;
   return (
     <ImageFrame>
       <Image
         className={className}
         src={src}
         onClick={() => {
-          if (element.display === "inline") {
-            const name = `${element.name}.png`;
-            handleImageClick(name, src);
-          }
+          const name = `${element.name}.png`;
+          handleImageClick(name, src);
         }}
         style={{
           objectFit: "cover",
@@ -37,7 +35,7 @@ export default function ImageElement({ element }: Props) {
           margin: "auto",
           height: "auto",
           display: "block",
-          cursor: element.display === "inline" ? "pointer" : "default",
+          cursor: "pointer",
         }}
         alt={element.name}
         loading="lazy"
