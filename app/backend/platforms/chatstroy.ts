@@ -17,12 +17,14 @@ import {
   fetchEventSource,
 } from "@fortaine/fetch-event-source";
 import { prettyObject } from "@/app/utils/format";
-import { ITextElement } from "../../store/element";
+import { IElements, ITextElement } from "../../store/element";
+import { v4 as uuidv4 } from "uuid";
 
 export interface BackendResponse {
   chat_result: string;
-  elements_result: string;
-  article_result: string;
+  element_name: string;
+  element_content: string[];
+  element_reason: string[];
 }
 
 export class ChatStroyApi implements LLMApi {
@@ -43,26 +45,25 @@ export class ChatStroyApi implements LLMApi {
   }
 
   extractMessage(res: BackendResponse) {
+    let eles: IElements = [];
+    res.element_content.forEach((value, index) =>
+      eles.push({
+        id: uuidv4(),
+        name: res.element_name,
+        type: "text",
+        content: value,
+        reason:
+          res.element_reason.length > index ? res.element_reason[index] : null,
+      } as ITextElement),
+    );
     return {
       content: res.chat_result,
-      elements: [
-        {
-          name: "elements",
-          type: "text",
-          content: prettyObject(res.elements_result),
-        } as ITextElement,
-        {
-          name: "article",
-          type: "text",
-          content: res.article_result,
-        } as ITextElement,
-      ],
+      elements: eles,
     } as ChatMessage;
   }
 
   async chat(options: ChatOptions) {
     const requestPayload = {
-      type: options.message.topic,
       content: options.message.content,
     };
 
@@ -72,7 +73,7 @@ export class ChatStroyApi implements LLMApi {
     options.onController?.(controller);
 
     try {
-      const chatPath = this.path(BackendPath.ChatPath);
+      let chatPath = this.path(BackendPath.ContentPath + options.message.topic);
       console.log("[Request] chatPath: ", chatPath);
       const chatPayload = {
         method: "POST",
@@ -91,7 +92,32 @@ export class ChatStroyApi implements LLMApi {
       clearTimeout(requestTimeoutId);
 
       const resJson = await res.json();
-      const response = resJson as BackendResponse;
+      console.log("[Request] resJson: ", resJson.element_content.length);
+      let ele_content: string[] = [];
+      let ele_reason: string[] = [];
+      if (typeof resJson.element_content !== "string") {
+        for (const key in resJson.element_content) {
+          console.log("[Request] key: ", resJson.element_content[key]);
+          if (typeof resJson.element_content[key] !== "string") {
+            for (const key2 in resJson.element_content[key]) {
+              if (key2 === "推荐理由")
+                ele_reason.push(resJson.element_content[key][key2]);
+              else ele_content.push(resJson.element_content[key][key2]);
+            }
+          } else {
+            ele_content.push(resJson.element_content[key]);
+          }
+        }
+      } else {
+        ele_content.push(resJson.element_content);
+      }
+
+      let response = {
+        chat_result: resJson.chat_result,
+        element_name: resJson.element_name,
+        element_content: ele_content,
+        element_reason: ele_reason,
+      } as BackendResponse;
       console.log("[Request] response: ", response);
       const message = this.extractMessage(response);
       options.onFinish(message);

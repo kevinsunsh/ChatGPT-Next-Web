@@ -329,9 +329,24 @@
   max-width: 100%;
   margin-top: 10px;
   border-radius: 10px;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(15, 94, 62, 0.05);
   padding: 10px;
   font-size: 14px;
+  user-select: text;
+  word-break: break-word;
+  border: var(--border-in-light);
+  position: relative;
+  transition: all ease 0.3s;
+}
+
+.chat-element-item {
+  box-sizing: border-box;
+  max-width: 100%;
+  margin-top: 10px;
+  border-radius: 100px;
+  background-color: rgba(15, 94, 62, 0.05);
+  padding: 10px;
+  font-size: 12px;
   user-select: text;
   word-break: break-word;
   border: var(--border-in-light);

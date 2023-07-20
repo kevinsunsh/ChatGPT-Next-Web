@@ -34,6 +34,7 @@ export enum StoreKey {
   Config = "app-config",
   Update = "chat-update",
   Sync = "sync",
+  Element = "element",
 }
 
 export const MAX_SIDEBAR_WIDTH = 500;
@@ -47,7 +48,7 @@ export const REQUEST_TIMEOUT_MS = 60000;
 export const EXPORT_MESSAGE_CLASS_NAME = "export-markdown";
 
 export const BackendPath = {
-  ChatPath: "message",
+  ContentPath: "content/",
   UsagePath: "",
   SubsPath: "",
   ListModelPath: "",

@@ -42,10 +42,14 @@ export default function TextElement({ element }: Props) {
     content = `\`\`\`${element.language}\n${content}\n\`\`\``;
   }
 
+  if (element.reason) {
+    content = `\`\`\`\n${content}\n理由: ${element.reason}\n\`\`\``;
+  }
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      className={styles["chat-message-item"]}
+      className={styles["chat-element-item"]}
     >
       {content}
     </ReactMarkdown>
