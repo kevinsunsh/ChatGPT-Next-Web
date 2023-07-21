@@ -1,5 +1,5 @@
 import {
-  DEFAULT_BACKEND_HOST,
+  DEFAULT_CHAT_HOST,
   BackendPath,
   REQUEST_TIMEOUT_MS,
 } from "@/app/constant";
@@ -10,7 +10,7 @@ import {
   useChatStore,
 } from "@/app/store";
 
-import { ChatOptions, getHeaders, LLMApi, LLMUsage } from "../api";
+import { ChatOptions, getHeaders, ContentApi, LLMUsage } from "../api";
 import Locale from "../../locales";
 import {
   EventStreamContentType,
@@ -27,21 +27,21 @@ export interface BackendResponse {
   element_reason: string[];
 }
 
-export class ChatStroyApi implements LLMApi {
+export class ChatStroyApi implements ContentApi {
   path(path: string): string {
-    let backendUrl = useAccessStore.getState().backendUrl;
-    console.log("[path] backendUrl: ", backendUrl);
+    let chatUrl = useAccessStore.getState().chatUrl;
+    console.log("[path] chatUrl: ", chatUrl);
     console.log(
       "[path] CHAT_AGENT_BASE_URL: ",
       process.env.CHAT_AGENT_BASE_URL,
     );
-    if (backendUrl.length === 0) {
-      backendUrl = process.env.CHAT_AGENT_BASE_URL ?? DEFAULT_BACKEND_HOST;
+    if (chatUrl.length === 0) {
+      chatUrl = process.env.CHAT_AGENT_BASE_URL ?? DEFAULT_CHAT_HOST;
     }
-    if (backendUrl.endsWith("/")) {
-      backendUrl = backendUrl.slice(0, backendUrl.length - 1);
+    if (chatUrl.endsWith("/")) {
+      chatUrl = chatUrl.slice(0, chatUrl.length - 1);
     }
-    return [backendUrl, path].join("/");
+    return [chatUrl, path].join("/");
   }
 
   extractMessage(res: BackendResponse) {
@@ -64,6 +64,7 @@ export class ChatStroyApi implements LLMApi {
 
   async chat(options: ChatOptions) {
     const requestPayload = {
+      authUid: useAccessStore.getState().accessCode,
       content: options.message.content,
     };
 
@@ -132,5 +133,41 @@ export class ChatStroyApi implements LLMApi {
       total: 0,
     } as LLMUsage;
   }
+  async confrim(ele_name: string, ele_content: string) {
+    let result = false;
+    let chatPath =
+      useAccessStore.getState().chatUrl +
+      "/" +
+      BackendPath.ContentPath +
+      ele_name +
+      "/confrim";
+    const confrimContent = {
+      authUid: useAccessStore.getState().accessCode,
+      content: ele_content,
+    };
+    const controller = new AbortController();
+
+    const chooseRequest = {
+      method: "POST",
+      body: JSON.stringify(confrimContent),
+      signal: controller.signal,
+      headers: getHeaders(),
+    };
+    // make a fetch request
+    const requestTimeoutId = setTimeout(
+      () => controller.abort(),
+      REQUEST_TIMEOUT_MS,
+    );
+
+    fetch(chatPath, chooseRequest)
+      .then((res) => res.json())
+      .then((_text) => {
+        result = true;
+      })
+      .catch(() => {
+        console.log("error");
+      });
+    clearTimeout(requestTimeoutId);
+    return result;
+  }
 }
-export { BackendPath };

@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { Path } from "../constant";
 import { useAccessStore } from "../store";
 import Locale from "../locales";
-
 import BotIcon from "../icons/bot.svg";
+import { getHeaders } from "../backend/api";
+import { REQUEST_TIMEOUT_MS } from "@/app/constant";
+import { api } from "../backend/api";
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -25,8 +27,18 @@ export function AuthPage() {
 
       <input
         className={styles["auth-input"]}
-        type="password"
-        placeholder={Locale.Auth.Input}
+        type="account"
+        placeholder={"账号"}
+        value={access.accessAccount}
+        onChange={(e) => {
+          access.updateCode(e.currentTarget.value);
+        }}
+      />
+
+      <input
+        className={styles["auth-input"]}
+        type="account"
+        placeholder={"密码"}
         value={access.accessCode}
         onChange={(e) => {
           access.updateCode(e.currentTarget.value);
@@ -37,9 +49,27 @@ export function AuthPage() {
         <IconButton
           text={Locale.Auth.Confirm}
           type="primary"
-          onClick={goHome}
+          onClick={() => {
+            api.central.login({
+              userMail: "kevinsun@unity3d.com",
+              displayName: "kevinsun",
+              onFinish(authUid) {
+                access.updateAccount("kevinsun@unity3d.com");
+                access.updateCode(authUid);
+                access.updateAuthorized(true);
+                goHome();
+              },
+              onError(error) {
+                access.updateAccount("");
+                access.updateAuthorized(true);
+                console.error("[Chat] failed ", error);
+              },
+              onController(controller) {
+                // collect controller for stop/retry
+              },
+            });
+          }}
         />
-        <IconButton text={Locale.Auth.Later} onClick={goHome} />
       </div>
     </div>
   );

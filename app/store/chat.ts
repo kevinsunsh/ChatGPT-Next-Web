@@ -6,11 +6,7 @@ import { trimTopic } from "../utils";
 import Locale, { getLang } from "../locales";
 import { showToast } from "../components/ui-lib";
 import { useAppConfig } from "./config";
-import {
-  DEFAULT_SYSTEM_TEMPLATE,
-  DEFAULT_BACKEND_HOST,
-  StoreKey,
-} from "../constant";
+import { DEFAULT_SYSTEM_TEMPLATE, StoreKey } from "../constant";
 import { api, RequestMessage } from "../backend/api";
 import { ChatControllerPool } from "../backend/controller";
 import { prettyObject } from "../utils/format";
@@ -297,7 +293,7 @@ export const useChatStore = create<ChatStore>()(
         });
 
         // make request
-        api.llm.chat({
+        api.content.chat({
           message: userMessage,
           onFinish(message) {
             if (message) {

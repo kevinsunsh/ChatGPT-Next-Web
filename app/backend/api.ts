@@ -1,6 +1,7 @@
 import { getClientConfig } from "../config/client";
 import { ChatMessage, useAccessStore } from "../store";
 import { ChatStroyApi } from "./platforms/chatstroy";
+import { CentralServerApi } from "./platforms/centralserver";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -27,16 +28,30 @@ export interface ServerSessions {
   topics: string;
 }
 
-export abstract class LLMApi {
+export abstract class ContentApi {
   abstract chat(options: ChatOptions): Promise<void>;
+  abstract confrim(ele_name: string, ele_content: string): Promise<boolean>;
   abstract usage(): Promise<LLMUsage>;
 }
 
-export class BackendApi {
-  public llm: LLMApi;
+export interface LoginOptions {
+  userMail: string;
+  displayName: string;
+  onFinish: (authUid: string) => void;
+  onError?: (err: Error) => void;
+  onController?: (controller: AbortController) => void;
+}
 
+export abstract class CentralApi {
+  abstract login(options: LoginOptions): Promise<void>;
+}
+
+export class BackendApi {
+  public content: ContentApi;
+  public central: CentralApi;
   constructor() {
-    this.llm = new ChatStroyApi();
+    this.content = new ChatStroyApi();
+    this.central = new CentralServerApi();
   }
 
   config() {}

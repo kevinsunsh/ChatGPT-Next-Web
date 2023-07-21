@@ -15,12 +15,8 @@ import {
   useAppConfig,
   useChatStore,
 } from "@/app/store";
-import {
-  DEFAULT_BACKEND_HOST,
-  BackendPath,
-  REQUEST_TIMEOUT_MS,
-} from "@/app/constant";
-import { getHeaders } from "../../backend/api";
+import { BackendPath, REQUEST_TIMEOUT_MS } from "@/app/constant";
+import { getHeaders, api } from "../../backend/api";
 import { useElementStore } from "../../store/element";
 
 interface Props {
@@ -54,44 +50,24 @@ export default function InlinedTextList({ items }: Props) {
     setTextArrayState((prevState) =>
       prevState.map((item, idx) => (idx === index ? !item : false)),
     );
-    let chatPath =
-      useAccessStore.getState().backendUrl +
-      "/" +
-      BackendPath.ContentPath +
-      el.name +
-      "/confrim";
-    const confrimContent = {
-      content: textArrayState[index] ? "" : el.content,
-    };
-    const controller = new AbortController();
 
-    const chooseRequest = {
-      method: "POST",
-      body: JSON.stringify(confrimContent),
-      signal: controller.signal,
-      headers: getHeaders(),
-    };
-    // make a fetch request
-    const requestTimeoutId = setTimeout(
-      () => controller.abort(),
-      REQUEST_TIMEOUT_MS,
-    );
-
-    fetch(chatPath, chooseRequest)
-      .then((res) => res.json())
-      .then((_text) => {
-        if (textArrayState[index] === false) {
-          const index = elementStore.topic.findIndex(
-            (element) => (element = el.name),
-          );
-          elementStore.id[index] = el.id ?? "";
-          elementStore.element[index] = el.content ?? "";
+    let ele_content = textArrayState[index] ? "" : el.content;
+    api.content
+      .confrim(el.name, ele_content ?? "")
+      .then((res) => {
+        if (res) {
+          if (textArrayState[index] === false) {
+            const index = elementStore.topic.findIndex(
+              (element) => (element = el.name),
+            );
+            elementStore.id[index] = el.id ?? "";
+            elementStore.element[index] = el.content ?? "";
+          }
         }
       })
       .catch(() => {
-        console.log("error");
+        console.log("confrim error");
       });
-    clearTimeout(requestTimeoutId);
   };
 
   return (

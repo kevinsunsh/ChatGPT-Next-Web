@@ -1,48 +1,44 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_BACKEND_HOST, StoreKey } from "../constant";
+import { DEFAULT_CHAT_HOST, DEFAULT_CENTRAL_HOST, StoreKey } from "../constant";
 import { getHeaders } from "../backend/api";
 import { getClientConfig } from "../config/client";
 
 export interface AccessControlStore {
+  accessAccount: string;
   accessCode: string;
-  needCode: boolean;
-  backendUrl: string;
+  authorized: boolean;
+  chatUrl: string;
+  centralUrl: string;
   defaultSessions: string;
 
+  updateAccount: (_: string) => void;
   updateCode: (_: string) => void;
-  enabledAccessControl: () => boolean;
+  updateAuthorized: (_: boolean) => void;
   isAuthorized: () => boolean;
-  fetch: () => void;
 }
-
-let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 
 export const useAccessStore = create<AccessControlStore>()(
   persist(
     (set, get) => ({
+      accessAccount: "",
       accessCode: "",
-      needCode: true,
-      backendUrl: process.env.CHAT_AGENT_BASE_URL ?? DEFAULT_BACKEND_HOST,
+      authorized: false,
+      chatUrl: process.env.CHAT_AGENT_BASE_URL ?? DEFAULT_CHAT_HOST,
+      centralUrl: DEFAULT_CENTRAL_HOST,
       defaultSessions: "",
 
-      enabledAccessControl() {
-        get().fetch();
-
-        return get().needCode;
+      updateAccount(account: string) {
+        set(() => ({ accessAccount: account }));
       },
       updateCode(code: string) {
         set(() => ({ accessCode: code }));
       },
-      isAuthorized() {
-        get().fetch();
-
-        // has token or has code or disabled access control
-        return true;
+      updateAuthorized(auth: boolean) {
+        set(() => ({ authorized: auth }));
       },
-      fetch() {
-        if (fetchState > 0) return;
-        fetchState = 1;
+      isAuthorized() {
+        return get().authorized;
       },
     }),
     {
