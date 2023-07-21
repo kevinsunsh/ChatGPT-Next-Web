@@ -8,7 +8,7 @@ import IconButton from "@mui/material/IconButton";
 import GppGoodIcon from "@mui/icons-material/GppGood";
 import QuestionMarkIcon from "@mui/icons-material/QuestionMark";
 import { useEffect, useState } from "react";
-import { ChatStroyApi } from "../../backend/platforms/chatstroy";
+import { ChatStoryApi } from "../../backend/platforms/chatstory";
 import {
   ChatMessage,
   useAccessStore,

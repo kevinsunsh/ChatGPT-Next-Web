@@ -27,7 +27,7 @@ export interface BackendResponse {
   element_reason: string[];
 }
 
-export class ChatStroyApi implements ContentApi {
+export class ChatStoryApi implements ContentApi {
   path(path: string): string {
     let chatUrl = useAccessStore.getState().chatUrl;
     console.log("[path] chatUrl: ", chatUrl);

@@ -1,6 +1,6 @@
 import { getClientConfig } from "../config/client";
 import { ChatMessage, useAccessStore } from "../store";
-import { ChatStroyApi } from "./platforms/chatstroy";
+import { ChatStoryApi } from "./platforms/chatstory";
 import { CentralServerApi } from "./platforms/centralserver";
 
 export const ROLES = ["system", "user", "assistant"] as const;
@@ -50,7 +50,7 @@ export class BackendApi {
   public content: ContentApi;
   public central: CentralApi;
   constructor() {
-    this.content = new ChatStroyApi();
+    this.content = new ChatStoryApi();
     this.central = new CentralServerApi();
   }
 
