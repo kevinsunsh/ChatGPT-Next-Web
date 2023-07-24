@@ -28,9 +28,16 @@ export interface ServerSessions {
   topics: string;
 }
 
+export interface CleanOptions {
+  onFinish: () => void;
+  onError?: (err: Error) => void;
+  onController?: (controller: AbortController) => void;
+}
+
 export abstract class ContentApi {
   abstract chat(options: ChatOptions): Promise<void>;
   abstract confrim(ele_name: string, ele_content: string): Promise<boolean>;
+  abstract clean(options: CleanOptions): Promise<void>;
   abstract usage(): Promise<LLMUsage>;
 }
 

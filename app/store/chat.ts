@@ -147,10 +147,12 @@ export const useChatStore = create<ChatStore>()(
       currentSessionIndex: 0,
 
       clearSessions() {
-        set(() => ({
-          sessions: getDefaultSessions(),
-          currentSessionIndex: 0,
-        }));
+        set(() => {
+          return {
+            sessions: getDefaultSessions(),
+            currentSessionIndex: 0,
+          };
+        });
       },
 
       selectSession(index: number) {
@@ -389,6 +391,11 @@ export const useChatStore = create<ChatStore>()(
       },
 
       clearAllData() {
+        api.content.clean({
+          onFinish() {},
+          onError(error) {},
+          onController(controller) {},
+        });
         localStorage.clear();
         location.reload();
       },

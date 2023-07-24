@@ -10,7 +10,13 @@ import {
   useChatStore,
 } from "@/app/store";
 
-import { ChatOptions, getHeaders, ContentApi, LLMUsage } from "../api";
+import {
+  ChatOptions,
+  getHeaders,
+  ContentApi,
+  LLMUsage,
+  CleanOptions,
+} from "../api";
 import Locale from "../../locales";
 import {
   EventStreamContentType,
@@ -162,12 +168,46 @@ export class ChatStoryApi implements ContentApi {
     fetch(chatPath, chooseRequest)
       .then((res) => res.json())
       .then((_text) => {
-        result = true;
+        console.log("error");
       })
       .catch(() => {
         console.log("error");
       });
     clearTimeout(requestTimeoutId);
     return result;
+  }
+
+  async clean(options: CleanOptions) {
+    const controller = new AbortController();
+    options.onController?.(controller);
+
+    try {
+      let chatPath =
+        useAccessStore.getState().chatUrl +
+        "/" +
+        BackendPath.ContentPath +
+        "clean";
+      console.log("[Request] chatPath: ", chatPath);
+      const cleanPayload = {
+        method: "GET",
+        signal: controller.signal,
+        headers: getHeaders(),
+      };
+
+      // make a fetch request
+      const requestTimeoutId = setTimeout(
+        () => controller.abort(),
+        REQUEST_TIMEOUT_MS,
+      );
+      console.log("[Request] cleanPayload: ", cleanPayload);
+      const res = await fetch(chatPath, cleanPayload);
+      clearTimeout(requestTimeoutId);
+      const resJson = await res.json();
+      console.log("[Request] resJson: ", resJson);
+      options.onFinish();
+    } catch (e) {
+      console.log("[Request] failed to make a chat reqeust", e);
+      options.onError?.(e as Error);
+    }
   }
 }
