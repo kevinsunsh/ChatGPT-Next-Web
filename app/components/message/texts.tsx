@@ -30,7 +30,7 @@ export default function InlinedTextList({ items }: Props) {
   useEffect(() => {
     items.map((el, i) => {
       const index = elementStore.topic.findIndex(
-        (element) => (element = el.name),
+        (element) => element === el.name,
       );
       if (elementStore.id[index] !== "") {
         setTextArrayState((prevState) =>
@@ -58,7 +58,7 @@ export default function InlinedTextList({ items }: Props) {
         if (res) {
           if (textArrayState[index] === false) {
             const index = elementStore.topic.findIndex(
-              (element) => (element = el.name),
+              (element) => element === el.name,
             );
             elementStore.id[index] = el.id ?? "";
             elementStore.element[index] = el.content ?? "";

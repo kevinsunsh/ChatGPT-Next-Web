@@ -165,14 +165,8 @@ export class ChatStoryApi implements ContentApi {
       REQUEST_TIMEOUT_MS,
     );
 
-    fetch(chatPath, chooseRequest)
-      .then((res) => res.json())
-      .then((_text) => {
-        console.log("error");
-      })
-      .catch(() => {
-        console.log("error");
-      });
+    let res = await fetch(chatPath, chooseRequest);
+    result = await res.json();
     clearTimeout(requestTimeoutId);
     return result;
   }
@@ -189,7 +183,7 @@ export class ChatStoryApi implements ContentApi {
         "clean";
       console.log("[Request] chatPath: ", chatPath);
       const cleanPayload = {
-        method: "GET",
+        method: "DELETE",
         signal: controller.signal,
         headers: getHeaders(),
       };
