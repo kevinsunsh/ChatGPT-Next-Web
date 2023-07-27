@@ -12,6 +12,16 @@ export interface RequestMessage {
   content: string;
 }
 
+export interface DownloadMeta {
+  contentType: string;
+}
+
+export interface DownloadInfo {
+  propertyName: string;
+  target_url: string;
+  metadata: DownloadMeta;
+}
+
 export interface ChatOptions {
   message: RequestMessage;
   onFinish: (message: ChatMessage) => void;
@@ -49,8 +59,15 @@ export interface LoginOptions {
   onController?: (controller: AbortController) => void;
 }
 
+export interface DownloadOptions {
+  onFinish: (info: DownloadInfo) => void;
+  onError?: (err: Error) => void;
+  onController?: (controller: AbortController) => void;
+}
+
 export abstract class CentralApi {
   abstract login(options: LoginOptions): Promise<void>;
+  abstract download(options: DownloadOptions): Promise<void>;
 }
 
 export class BackendApi {

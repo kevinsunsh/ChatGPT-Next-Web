@@ -26,8 +26,6 @@ RUN yarn build
 FROM base AS runner
 WORKDIR /app
 
-RUN apk add proxychains-ng
-
 ENV CODE=""
 
 COPY --from=builder /app/public ./public
@@ -37,4 +35,4 @@ COPY --from=builder /app/.next/server ./.next/server
 
 EXPOSE 3000
 
-CMD node server.js;
+CMD node server.js

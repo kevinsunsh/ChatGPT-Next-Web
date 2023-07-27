@@ -8,6 +8,8 @@ interface Props {
 }
 
 export default function InlinedElements({ elements }: Props) {
+  if (elements === undefined) return null;
+
   if (!elements.length) {
     return null;
   }

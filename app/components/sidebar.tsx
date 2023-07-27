@@ -26,6 +26,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMobileScreen } from "../utils";
 import dynamic from "next/dynamic";
 import { showConfirm, showToast } from "./ui-lib";
+import { api, getHeaders } from "../backend/api";
 
 const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
   loading: () => null,
@@ -163,9 +164,45 @@ export function SideBar(props: { className?: string }) {
             </Link>
           </div>
           <div className={styles["sidebar-action"]}>
-            <a href={REPO_URL} target="_blank">
-              <IconButton icon={<GithubIcon />} shadow />
-            </a>
+            <IconButton
+              icon={<GithubIcon />}
+              shadow
+              onClick={() => {
+                api.central.download({
+                  onFinish(info) {
+                    const controller = new AbortController();
+                    let headers: Record<string, string> = {
+                      "Content-Type": "video/mp4",
+                      "x-requested-with": "XMLHttpRequest",
+                      "Access-Control-Allow-Origin": "*",
+                    };
+                    const downloadRequest = {
+                      method: "GET",
+                      headers: headers,
+                    };
+                    console.log("eeee", info.target_url);
+                    fetch(info.target_url, downloadRequest)
+                      .then((response) => response.blob())
+                      .then((blob) => {
+                        const url = window.URL.createObjectURL(
+                          new Blob([blob]),
+                        );
+                        const element = document.createElement("a");
+                        element.href = url;
+                        element.download = "output.mp4";
+                        element.click();
+                      })
+                      .catch((e) => console.log(e));
+                  },
+                  onError(error) {
+                    console.error("[Download] failed ", error);
+                  },
+                  onController(controller) {
+                    // collect controller for stop/retry
+                  },
+                });
+              }}
+            />
           </div>
         </div>
         <div>
