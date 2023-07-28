@@ -180,7 +180,6 @@ export function SideBar(props: { className?: string }) {
                       method: "GET",
                       headers: headers,
                     };
-                    console.log("eeee", info.target_url);
                     fetch(info.target_url, downloadRequest)
                       .then((response) => response.blob())
                       .then((blob) => {
