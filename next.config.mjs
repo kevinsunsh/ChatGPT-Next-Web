@@ -8,6 +8,10 @@ const nextConfig = {
       use: ["@svgr/webpack"],
     });
 
+    config.plugins.push(
+      new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+    );
+
     config.resolve.fallback = {
       child_process: false,
     };
@@ -16,7 +20,7 @@ const nextConfig = {
   },
   output: "standalone",
   images: {
-    unoptimized: false,
+    unoptimized: true,
   },
 };
 
