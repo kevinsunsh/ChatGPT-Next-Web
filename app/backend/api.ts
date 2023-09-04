@@ -45,6 +45,7 @@ export interface CleanOptions {
 }
 
 export interface ConfrimOptions {
+  topic: string;
   eleName: string;
   eleContent: string;
   onFinish: (message: ChatMessage) => void;
@@ -68,6 +69,8 @@ export interface LoginOptions {
 }
 
 export interface DownloadOptions {
+  topic: string;
+  featureName: string;
   onFinish: (info: DownloadInfo) => void;
   onError?: (err: Error) => void;
   onController?: (controller: AbortController) => void;

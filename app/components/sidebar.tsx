@@ -4,7 +4,8 @@ import styles from "./home.module.scss";
 
 import { IconButton } from "./button";
 import SettingsIcon from "../icons/settings.svg";
-import DownloadIcon from "../icons/download.svg";
+import Download2DIcon from "../icons/2D.svg";
+import Download3DIcon from "../icons/3D.svg";
 import ChatGptIcon from "../icons/chatgpt.svg";
 import AddIcon from "../icons/add.svg";
 import CloseIcon from "../icons/close.svg";
@@ -165,10 +166,56 @@ export function SideBar(props: { className?: string }) {
           </div>
           <div className={styles["sidebar-action"]}>
             <IconButton
-              icon={<DownloadIcon />}
+              icon={<Download2DIcon />}
               shadow
               onClick={() => {
+                const session = chatStore.currentSession();
                 api.central.download({
+                  topic: session.topic,
+                  featureName: "video2D",
+                  onFinish(info) {
+                    const controller = new AbortController();
+                    let headers: Record<string, string> = {
+                      "Content-Type": "video/mp4",
+                      "x-requested-with": "XMLHttpRequest",
+                      "Access-Control-Allow-Origin": "*",
+                    };
+                    const downloadRequest = {
+                      method: "GET",
+                      headers: headers,
+                    };
+                    fetch(info.target_url, downloadRequest)
+                      .then((response) => response.blob())
+                      .then((blob) => {
+                        const url = window.URL.createObjectURL(
+                          new Blob([blob]),
+                        );
+                        const element = document.createElement("a");
+                        element.href = url;
+                        element.download = "output.mp4";
+                        element.click();
+                      })
+                      .catch((e) => console.log(e));
+                  },
+                  onError(error) {
+                    console.error("[Download] failed ", error);
+                  },
+                  onController(controller) {
+                    // collect controller for stop/retry
+                  },
+                });
+              }}
+            />
+          </div>
+          <div className={styles["sidebar-action"]}>
+            <IconButton
+              icon={<Download3DIcon />}
+              shadow
+              onClick={() => {
+                const session = chatStore.currentSession();
+                api.central.download({
+                  topic: session.topic,
+                  featureName: "video3D",
                   onFinish(info) {
                     const controller = new AbortController();
                     let headers: Record<string, string> = {

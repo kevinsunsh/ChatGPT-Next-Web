@@ -48,8 +48,12 @@ export class CentralServerApi implements CentralApi {
     try {
       const downloadPath =
         useAccessStore.getState().centralUrl +
-        "/api/assets/story/output/thefirstone/video/download";
-
+        "/api/assets/" +
+        options.topic +
+        "/" +
+        options.featureName +
+        "/download";
+      console.log("downloadPath", downloadPath);
       const controller = new AbortController();
       options.onController?.(controller);
       let headers: Record<string, string> = {
@@ -69,7 +73,7 @@ export class CentralServerApi implements CentralApi {
       clearTimeout(requestTimeoutId);
 
       const resJson = await res.json();
-      console.log("kevin", resJson.data);
+      console.log("kevin", resJson);
       options.onFinish(resJson.data as DownloadInfo);
     } catch (e) {
       console.log("[Request] failed to make a chat reqeust", e);

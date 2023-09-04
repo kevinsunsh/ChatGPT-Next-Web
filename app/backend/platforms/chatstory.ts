@@ -144,6 +144,7 @@ export class ChatStoryApi implements ContentApi {
   async confrim(options: ConfrimOptions) {
     const confrimContent = {
       authUid: useAccessStore.getState().accessCode,
+      eleName: options.eleName,
       content: options.eleContent,
     };
 
@@ -157,7 +158,7 @@ export class ChatStoryApi implements ContentApi {
         useAccessStore.getState().chatUrl +
         "/" +
         BackendPath.ContentPath +
-        options.eleName +
+        options.topic +
         "/confrim";
 
       const chooseRequest = {

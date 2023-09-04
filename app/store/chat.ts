@@ -92,7 +92,7 @@ function createDefaultSessions(): ChatSession[] {
     })
   */
   let sessions: ChatSession[] = [];
-  "topic,audience,style,outline,script".split(",").forEach((topic) => {
+  "thefirstone".split(",").forEach((topic) => {
     let session = createEmptySession();
     session.topic = topic;
     sessions.push(session);

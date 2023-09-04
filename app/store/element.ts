@@ -36,16 +36,16 @@ export const elementState = atom<IElements>({
 });
 
 interface ElementStore {
-  topic: string[];
-  element: string[];
+  name: string[];
+  content: string[];
   id: string[];
 }
 
 export const useElementStore = create<ElementStore>()(
   persist(
     (set, get) => ({
-      topic: ["topic", "audience", "style", "outline", "script"],
-      element: ["", "", "", "", ""],
+      name: ["topic", "audience", "style", "outline", "script"],
+      content: ["", "", "", "", ""],
       id: ["", "", "", "", ""],
     }),
     {

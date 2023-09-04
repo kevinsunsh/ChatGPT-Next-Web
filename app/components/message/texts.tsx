@@ -32,9 +32,7 @@ export default function InlinedTextList({ items }: Props) {
   const chatStore = useChatStore();
   useEffect(() => {
     items.map((el, i) => {
-      const index = elementStore.topic.findIndex(
-        (element) => element === el.name,
-      );
+      const index = elementStore.name.findIndex((name) => name === el.name);
       if (elementStore.id[index] !== "") {
         setTextArrayState((prevState) =>
           prevState.map((item, idx) =>
@@ -56,7 +54,11 @@ export default function InlinedTextList({ items }: Props) {
 
     if (el.name === "next_action") {
       if (textArrayState[index] === false) {
-        chatStore.onUserInput(el.content ?? "");
+        chatStore.onUserInput(el.content ?? "").then(() => {
+          if (el.content === "cleanworkspace") {
+            chatStore.clearAllData();
+          }
+        });
       }
     } else {
       let ele_content = textArrayState[index] ? "" : el.content;
@@ -68,15 +70,16 @@ export default function InlinedTextList({ items }: Props) {
       });
       const messageIndex = chatStore.currentSession().messages.length + 1;
       api.content.confrim({
+        topic: session.topic,
         eleName: el.name,
         eleContent: ele_content,
         onFinish(message) {
           if (textArrayState[index] === false) {
-            const index = elementStore.topic.findIndex(
-              (element) => element === el.name,
+            const index = elementStore.name.findIndex(
+              (name) => name === el.name,
             );
             elementStore.id[index] = el.id ?? "";
-            elementStore.element[index] = el.content ?? "";
+            elementStore.content[index] = el.content ?? "";
 
             // save user's and bot's message
             chatStore.updateCurrentSession((session) => {
