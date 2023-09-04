@@ -8,6 +8,7 @@ import {
   useAccessStore,
   useAppConfig,
   useChatStore,
+  createMessage,
 } from "@/app/store";
 
 import {
@@ -16,6 +17,7 @@ import {
   ContentApi,
   LLMUsage,
   CleanOptions,
+  ConfrimOptions,
 } from "../api";
 import Locale from "../../locales";
 import {
@@ -139,36 +141,73 @@ export class ChatStoryApi implements ContentApi {
       total: 0,
     } as LLMUsage;
   }
-  async confrim(ele_name: string, ele_content: string) {
-    let result = false;
-    let chatPath =
-      useAccessStore.getState().chatUrl +
-      "/" +
-      BackendPath.ContentPath +
-      ele_name +
-      "/confrim";
+  async confrim(options: ConfrimOptions) {
     const confrimContent = {
       authUid: useAccessStore.getState().accessCode,
-      content: ele_content,
+      content: options.eleContent,
     };
+
+    console.log("[Request] payload: ", confrimContent);
+
     const controller = new AbortController();
+    options.onController?.(controller);
 
-    const chooseRequest = {
-      method: "POST",
-      body: JSON.stringify(confrimContent),
-      signal: controller.signal,
-      headers: getHeaders(),
-    };
-    // make a fetch request
-    const requestTimeoutId = setTimeout(
-      () => controller.abort(),
-      REQUEST_TIMEOUT_MS,
-    );
+    try {
+      let chatPath =
+        useAccessStore.getState().chatUrl +
+        "/" +
+        BackendPath.ContentPath +
+        options.eleName +
+        "/confrim";
 
-    let res = await fetch(chatPath, chooseRequest);
-    result = await res.json();
-    clearTimeout(requestTimeoutId);
-    return result;
+      const chooseRequest = {
+        method: "POST",
+        body: JSON.stringify(confrimContent),
+        signal: controller.signal,
+        headers: getHeaders(),
+      };
+      // make a fetch request
+      const requestTimeoutId = setTimeout(
+        () => controller.abort(),
+        REQUEST_TIMEOUT_MS,
+      );
+
+      let res = await fetch(chatPath, chooseRequest);
+      clearTimeout(requestTimeoutId);
+      const resJson = await res.json();
+
+      let confrim_respone: string[] = [];
+      let confrim_desc: string[] = [];
+      if (typeof resJson.confrim_respone !== "string") {
+        for (const key in resJson.confrim_respone) {
+          if (typeof resJson.confrim_respone[key] !== "string") {
+            for (const key2 in resJson.confrim_respone[key]) {
+              if (key2 === "action_desc")
+                confrim_desc.push(resJson.confrim_respone[key][key2]);
+              else confrim_respone.push(resJson.confrim_respone[key][key2]);
+            }
+          } else {
+            confrim_respone.push(resJson.confrim_respone[key]);
+          }
+        }
+      } else {
+        confrim_respone.push(resJson.confrim_respone);
+      }
+
+      let response = {
+        chat_result: "确认回复",
+        element_name: resJson.confrim_action,
+        element_content: confrim_respone,
+        element_reason: confrim_desc,
+      } as BackendResponse;
+      console.log("[Request] response in confrim: ", response);
+
+      const message = this.extractMessage(response);
+      options.onFinish(message);
+    } catch (e) {
+      console.log("[Request] failed to make a chat reqeust", e);
+      options.onError?.(e as Error);
+    }
   }
 
   async clean(options: CleanOptions) {

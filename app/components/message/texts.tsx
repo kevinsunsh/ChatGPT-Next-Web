@@ -14,10 +14,13 @@ import {
   useAccessStore,
   useAppConfig,
   useChatStore,
+  createMessage,
 } from "@/app/store";
 import { BackendPath, REQUEST_TIMEOUT_MS } from "@/app/constant";
 import { getHeaders, api } from "../../backend/api";
 import { useElementStore } from "../../store/element";
+import { prettyObject } from "../../utils/format";
+import { ChatControllerPool } from "../../backend/controller";
 
 interface Props {
   items: ITextElement[];
@@ -26,7 +29,7 @@ interface Props {
 export default function InlinedTextList({ items }: Props) {
   const [textArrayState, setTextArrayState] = useState([false, false, false]);
   const elementStore = useElementStore();
-
+  const chatStore = useChatStore();
   useEffect(() => {
     items.map((el, i) => {
       const index = elementStore.topic.findIndex(
@@ -51,23 +54,67 @@ export default function InlinedTextList({ items }: Props) {
       prevState.map((item, idx) => (idx === index ? !item : false)),
     );
 
-    let ele_content = textArrayState[index] ? "" : el.content;
-    api.content
-      .confrim(el.name, ele_content ?? "")
-      .then((res) => {
-        if (res) {
+    if (el.name === "next_action") {
+      if (textArrayState[index] === false) {
+        chatStore.onUserInput(el.content ?? "");
+      }
+    } else {
+      let ele_content = textArrayState[index] ? "" : el.content;
+      ele_content = ele_content ?? "";
+
+      const session = chatStore.currentSession();
+      const botMessage: ChatMessage = createMessage({
+        role: "assistant",
+      });
+      const messageIndex = chatStore.currentSession().messages.length + 1;
+      api.content.confrim({
+        eleName: el.name,
+        eleContent: ele_content,
+        onFinish(message) {
           if (textArrayState[index] === false) {
             const index = elementStore.topic.findIndex(
               (element) => element === el.name,
             );
             elementStore.id[index] = el.id ?? "";
             elementStore.element[index] = el.content ?? "";
+
+            // save user's and bot's message
+            chatStore.updateCurrentSession((session) => {
+              session.messages = session.messages.concat([botMessage]);
+            });
+            botMessage.content = message.content;
+            botMessage.elements = message.elements;
+            console.log("[Request] botMessage: ", botMessage);
+            chatStore.onNewMessage(botMessage);
+            ChatControllerPool.remove(session.id, botMessage.id);
           }
-        }
-      })
-      .catch(() => {
-        console.log("confrim error");
+        },
+        onError(error) {
+          const isAborted = error.message.includes("aborted");
+          botMessage.content =
+            "\n\n" +
+            prettyObject({
+              error: true,
+              message: error.message,
+            });
+          botMessage.isError = !isAborted;
+          chatStore.updateCurrentSession((session) => {
+            session.messages = session.messages.concat();
+          });
+          ChatControllerPool.remove(session.id, botMessage.id ?? messageIndex);
+
+          console.error("[Chat] failed ", error);
+        },
+        onController(controller) {
+          // collect controller for stop/retry
+          ChatControllerPool.addController(
+            session.id,
+            botMessage.id ?? messageIndex,
+            controller,
+          );
+        },
       });
+    }
   };
 
   return (

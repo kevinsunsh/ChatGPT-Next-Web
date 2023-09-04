@@ -44,9 +44,17 @@ export interface CleanOptions {
   onController?: (controller: AbortController) => void;
 }
 
+export interface ConfrimOptions {
+  eleName: string;
+  eleContent: string;
+  onFinish: (message: ChatMessage) => void;
+  onError?: (err: Error) => void;
+  onController?: (controller: AbortController) => void;
+}
+
 export abstract class ContentApi {
   abstract chat(options: ChatOptions): Promise<void>;
-  abstract confrim(ele_name: string, ele_content: string): Promise<boolean>;
+  abstract confrim(options: ConfrimOptions): Promise<void>;
   abstract clean(options: CleanOptions): Promise<void>;
   abstract usage(): Promise<LLMUsage>;
 }
